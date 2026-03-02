@@ -13,7 +13,7 @@ void main() {
         if (stripe < 6.0) {
             if (luma >= 0.85) {
                 color = vec4(1.0, 0.0, 0.0, 1.0);
-            } else if (luma >= 0.8) {
+            } else if (luma >= 0.82) {
                 color = vec4(0.0, 1.0, 0.0, 1.0);
             }
         }

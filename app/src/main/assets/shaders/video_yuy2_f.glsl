@@ -2,18 +2,26 @@
 precision mediump float;
 in vec2 vTexCoord;
 out vec4 fragColor;
-uniform sampler2D uTextureY;
-uniform sampler2D uTextureUV;
+uniform sampler2D uTextureYUV;
 uniform float uTime;
 uniform int uShowZebra;
+
 void main() {
-    float y = texture(uTextureY, vTexCoord).r;
-    vec2 uv = texture(uTextureUV, vTexCoord).rg;
-    float u = uv.r - 0.5;
-    float v = uv.g - 0.5;
+    vec4 packedYUV = texture(uTextureYUV, vTexCoord);
+
+    float y0 = packedYUV.r;
+    float u  = packedYUV.g - 0.5;
+    float y1 = packedYUV.b;
+    float v  = packedYUV.a - 0.5;
+
+    float width = float(textureSize(uTextureYUV, 0).x) * 2.0;
+    float xPos = vTexCoord.x * width;
+    float y = (mod(xPos, 2.0) < 1.0) ? y0 : y1;
+
     float r = y + 1.402 * v;
     float g = y - 0.34414 * u - 0.71414 * v;
     float b = y + 1.772 * u;
+
     vec4 color = vec4(r, g, b, 1.0);
 
     if (uShowZebra == 1) {

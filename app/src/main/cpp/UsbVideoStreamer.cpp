@@ -109,7 +109,8 @@ bool UsbVideoStreamer::start() {
 
 bool UsbVideoStreamer::stop() {
     if (streamHandle_ == nullptr) return false;
-    return uvc_stream_stop(streamHandle_) == UVC_SUCCESS;
+    uvc_error_t res = uvc_stream_stop(streamHandle_);
+    return res == UVC_SUCCESS;
 }
 
 void UsbVideoStreamer::sendMockFrame(const uint8_t* yData, const uint8_t* uvData, int32_t width, int32_t height) {
@@ -136,8 +137,28 @@ std::string UsbVideoStreamer::statsSummaryString() const {
 }
 
 UsbVideoStreamer::~UsbVideoStreamer() {
-    if (deviceHandle_ != nullptr) uvc_close(deviceHandle_);
-    if (uvcContext_ != nullptr) uvc_exit(uvcContext_);
+    ULOGI("UsbVideoStreamer destroying...");
+    // 1. Stop streaming (waits for callback to finish)
+    stop();
+
+    // 2. Close stream handle
+    if (streamHandle_ != nullptr) {
+        uvc_stream_close(streamHandle_);
+        streamHandle_ = nullptr;
+    }
+
+    // 3. Close device handle
+    if (deviceHandle_ != nullptr) {
+        uvc_close(deviceHandle_);
+        deviceHandle_ = nullptr;
+    }
+
+    // 4. Exit UVC context
+    if (uvcContext_ != nullptr) {
+        uvc_exit(uvcContext_);
+        uvcContext_ = nullptr;
+    }
+    ULOGI("UsbVideoStreamer destroyed");
 }
 
 int UsbVideoStreamer::getFormat() const {
@@ -182,6 +203,8 @@ bool UsbVideoStreamer::bindFrameToTextures(int texY, int texUV) {
 
 void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data) {
     UsbVideoStreamer *self = (UsbVideoStreamer *) user_data;
+    if (self == nullptr) return;
+
     UsbVideoStreamerStats &stats = self->stats_;
 
     std::lock_guard<std::mutex> lock(self->frameMutex_);
@@ -202,6 +225,10 @@ void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data)
         case UVC_FRAME_FORMAT_NV12: {
             size_t y_size = width * height;
             size_t uv_size = y_size / 2;
+            if (frame->data_bytes < y_size + uv_size) {
+                ULOGW("Truncated NV12 frame: expected %zu, got %zu", y_size + uv_size, frame->data_bytes);
+                break;
+            }
             if (self->plane0_.size() != y_size) self->plane0_.resize(y_size);
             if (self->plane1_.size() != uv_size) self->plane1_.resize(uv_size);
             std::memcpy(self->plane0_.data(), frame->data, y_size);
@@ -210,6 +237,10 @@ void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data)
         }
         case UVC_FRAME_FORMAT_YUYV: {
             size_t size = width * height * 2;
+            if (frame->data_bytes < size) {
+                ULOGW("Truncated YUYV frame: expected %zu, got %zu", size, frame->data_bytes);
+                break;
+            }
             if (self->plane0_.size() != size) self->plane0_.resize(size);
             std::memcpy(self->plane0_.data(), frame->data, size);
             break;

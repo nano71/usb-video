@@ -155,6 +155,7 @@ object UsbVideoNativeLibrary {
     class VideoRenderer(private val context: Context) : GLSurfaceView.Renderer {
         private var programNV12 = 0
         private var programRGBA = 0
+        private var programYUY2 = 0
 
         private var texY = 0
         private var texUV = 0
@@ -205,9 +206,11 @@ object UsbVideoNativeLibrary {
             val vertexShaderCode = loadShaderFromAssets("shaders/video_v.glsl")
             val fragmentShaderNV12Code = loadShaderFromAssets("shaders/video_nv12_f.glsl")
             val fragmentShaderRGBACode = loadShaderFromAssets("shaders/video_rgba_f.glsl")
+            val fragmentShaderYUY2Code = loadShaderFromAssets("shaders/video_yuy2_f.glsl")
 
             programNV12 = createProgram(vertexShaderCode, fragmentShaderNV12Code)
             programRGBA = createProgram(vertexShaderCode, fragmentShaderRGBACode)
+            programYUY2 = createProgram(vertexShaderCode, fragmentShaderYUY2Code)
         }
 
         private fun loadShaderFromAssets(fileName: String): String {
@@ -244,11 +247,10 @@ object UsbVideoNativeLibrary {
 
             val time = (SystemClock.uptimeMillis() - startTime).toFloat()
 
-            val format = getVideoFormat()
-            if (format == 1) { // NV12
-                drawNV12(time)
-            } else { // RGBA or others treated as RGBA
-                drawRGBA(time)
+            when (getVideoFormat()) {
+                1 -> drawNV12(time)
+                2 -> drawYUY2(time)
+                else -> drawRGBA(time)
             }
         }
 
@@ -281,6 +283,37 @@ object UsbVideoNativeLibrary {
             GLES30.glActiveTexture(GLES30.GL_TEXTURE1)
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texUV)
             GLES30.glUniform1i(texUVHandle, 1)
+
+            GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
+
+            GLES30.glDisableVertexAttribArray(positionHandle)
+            GLES30.glDisableVertexAttribArray(texCoordHandle)
+        }
+
+        private fun drawYUY2(time: Float) {
+            GLES30.glUseProgram(programYUY2)
+
+            val positionHandle = GLES30.glGetAttribLocation(programYUY2, "aPosition")
+            GLES30.glEnableVertexAttribArray(positionHandle)
+            GLES30.glVertexAttribPointer(positionHandle, 2, GLES30.GL_FLOAT, false, 8, vertexBuffer)
+
+            val texCoordHandle = GLES30.glGetAttribLocation(programYUY2, "aTexCoord")
+            GLES30.glEnableVertexAttribArray(texCoordHandle)
+            GLES30.glVertexAttribPointer(texCoordHandle, 2, GLES30.GL_FLOAT, false, 8, texCoordBuffer)
+
+            val mvpHandle = GLES30.glGetUniformLocation(programYUY2, "uMVPMatrix")
+            GLES30.glUniformMatrix4fv(mvpHandle, 1, false, mvpMatrix, 0)
+
+            val timeHandle = GLES30.glGetUniformLocation(programYUY2, "uTime")
+            GLES30.glUniform1f(timeHandle, time)
+
+            val zebraHandle = GLES30.glGetUniformLocation(programYUY2, "uShowZebra")
+            GLES30.glUniform1i(zebraHandle, if (showZebra) 1 else 0)
+
+            val texYUVHandle = GLES30.glGetUniformLocation(programYUY2, "uTextureYUV")
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, texY)
+            GLES30.glUniform1i(texYUVHandle, 0)
 
             GLES30.glDrawArrays(GLES30.GL_TRIANGLE_STRIP, 0, 4)
 

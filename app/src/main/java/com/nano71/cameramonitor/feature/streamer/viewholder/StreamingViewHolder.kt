@@ -54,8 +54,8 @@ class StreamingViewHolder(
         val videoFormat = streamerViewModel.videoFormat
         val width = videoFormat?.width ?: 1920
         val height = videoFormat?.height ?: 1080
-
-        videoContainerView.initialize(width, height)
+        val aspectRatioFloat = videoFormat?.aspectRatioFloat ?: 1.77F
+        videoContainerView.initialize(width, height, aspectRatioFloat)
 
         setupToolbarToggle()
         setupToolbarButtons()
@@ -71,6 +71,7 @@ class StreamingViewHolder(
             }
         }
     }
+
     private fun setupToolbarButtons() {
         backButton.setOnClickListener {
             Log.i(TAG, "offButton clicked")

@@ -30,6 +30,7 @@ class VideoContainerView @JvmOverloads constructor(
     private val renderer = UsbVideoNativeLibrary.VideoRenderer(context)
     private var glSurfaceView: GLSurfaceView? = null
     private val gridOverlay = CameraGridOverlay(context)
+    private var videoAspectRatio: Float = 0f
 
     fun toggleGridVisible() {
         gridOverlay.visibility = if (gridOverlay.isVisible) GONE else VISIBLE
@@ -39,7 +40,7 @@ class VideoContainerView @JvmOverloads constructor(
         renderer.showZebra = visible
     }
 
-    fun initialize(videoWidth: Int, videoHeight: Int) {
+    fun initialize(videoWidth: Int, videoHeight: Int, aspectRatioFloat: Float) {
         if (glSurfaceView != null) return
         glSurfaceView = GLSurfaceView(context).apply {
             setEGLContextClientVersion(3)
@@ -47,9 +48,33 @@ class VideoContainerView @JvmOverloads constructor(
             renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
         }
 
-        val params = LayoutParams(videoWidth, videoHeight, Gravity.CENTER)
+        val params = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER)
 
         addView(glSurfaceView, params)
         addView(gridOverlay, params)
+
+        videoAspectRatio = aspectRatioFloat
+                requestLayout()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        if (videoAspectRatio > 0) {
+            var width = MeasureSpec.getSize(widthMeasureSpec)
+            var height = MeasureSpec.getSize(heightMeasureSpec)
+            val containerAspectRatio = width.toFloat() / height
+
+            if (containerAspectRatio > videoAspectRatio) {
+                width = (height * videoAspectRatio).toInt()
+            } else {
+                height = (width / videoAspectRatio).toInt()
+            }
+
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY)
+            )
+        } else {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        }
     }
 }
