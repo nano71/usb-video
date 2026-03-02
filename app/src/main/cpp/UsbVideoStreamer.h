@@ -65,18 +65,19 @@ public:
             uvc_frame_format uvcFrameFormat);
 
     ~UsbVideoStreamer();
-
     bool configureOutput();
 
     bool start();
 
     bool stop();
 
+    void sendMockFrame(const uint8_t* yData, const uint8_t* uvData, int32_t width, int32_t height);
+
     std::string statsSummaryString() const;
 
     int getFormat() const;
     bool bindFrameToTextures(int texY, int texUV);
-
+    bool useMockFrame_{false};
 private:
     uvc_context_t *uvcContext_{};
     uvc_device_handle_t *deviceHandle_{};

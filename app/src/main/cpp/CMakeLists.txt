@@ -74,7 +74,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         usb-1.0
         uvc
         yuv
-        mediandk
         android
         aaudio
         jnigraphics

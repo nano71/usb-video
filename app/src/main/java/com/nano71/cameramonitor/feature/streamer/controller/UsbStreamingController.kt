@@ -20,6 +20,7 @@ import android.hardware.usb.UsbDevice
 import android.util.Log
 import com.nano71.cameramonitor.core.connection.VideoFormat
 import com.nano71.cameramonitor.core.eventloop.EventLooper
+import com.nano71.cameramonitor.core.usb.FFmpegVideoDecoder
 import com.nano71.cameramonitor.core.usb.UsbDeviceState
 import com.nano71.cameramonitor.core.usb.UsbMonitor
 import com.nano71.cameramonitor.core.usb.UsbVideoNativeLibrary
@@ -61,6 +62,11 @@ internal class UsbStreamingController {
                     videoFormat,
                 ).also {
                     UsbVideoNativeLibrary.startUsbVideoStreamingNative()
+
+                    // 使用 FFmpeg 替换 MediaCodec 进行模拟视频解码
+                    Thread {
+                        FFmpegVideoDecoder(context, "file:///storage/emulated/0/Movies/QQ/1080p30fps.mp4").start()
+                    }.start()
                 }
             }
         Log.i(TAG, "startUsbVideoStreaming $videoStreamStatus, $videoStreamMessage")
@@ -107,6 +113,7 @@ internal class UsbStreamingController {
         return EventLooper.call {
             UsbVideoNativeLibrary.startUsbAudioStreamingNative()
             UsbVideoNativeLibrary.startUsbVideoStreamingNative()
+
             UsbDeviceState.Streaming(
                 usbDeviceState.usbDevice,
                 usbDeviceState.audioStreamingConnection,

@@ -72,6 +72,7 @@ android {
 }
 
 dependencies {
+    implementation("io.github.jamaismagic.ffmpeg:ffmpeg-kit-lts-min-16kb:6.1.4")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity:1.12.4")
     implementation("androidx.activity:activity-ktx:1.12.4")

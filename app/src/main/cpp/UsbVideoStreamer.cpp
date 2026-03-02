@@ -112,6 +112,25 @@ bool UsbVideoStreamer::stop() {
     return uvc_stream_stop(streamHandle_) == UVC_SUCCESS;
 }
 
+void UsbVideoStreamer::sendMockFrame(const uint8_t* yData, const uint8_t* uvData, int32_t width, int32_t height) {
+    std::lock_guard<std::mutex> lock(frameMutex_);
+    useMockFrame_ = true;
+    width_ = width;
+    height_ = height;
+
+    size_t y_size = width * height;
+    size_t uv_size = y_size / 2;
+
+    if (plane0_.size() != y_size) plane0_.resize(y_size);
+    if (plane1_.size() != uv_size) plane1_.resize(uv_size);
+
+    std::memcpy(plane0_.data(), yData, y_size);
+    std::memcpy(plane1_.data(), uvData, uv_size);
+
+    frameUpdated_ = true;
+    stats_.recordFrame();
+}
+
 std::string UsbVideoStreamer::statsSummaryString() const {
     return std::format("{}x{} @{} fps", captureFrameWidth_, captureFrameHeight_, stats_.fps);
 }
@@ -122,6 +141,9 @@ UsbVideoStreamer::~UsbVideoStreamer() {
 }
 
 int UsbVideoStreamer::getFormat() const {
+    if (useMockFrame_) {
+        return 1; // Always NV12 for mock frames from FFmpeg
+    }
     switch (captureFrameFormat_) {
         case UVC_FRAME_FORMAT_NV12:
             return 1;
@@ -163,6 +185,9 @@ void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data)
     UsbVideoStreamerStats &stats = self->stats_;
 
     std::lock_guard<std::mutex> lock(self->frameMutex_);
+    if (self->useMockFrame_) {
+        return;
+    }
     int width = frame->width;
     int height = frame->height;
     self->width_ = width;

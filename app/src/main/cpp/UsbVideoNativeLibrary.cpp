@@ -150,4 +150,24 @@ JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibr
     if (streamer_ != nullptr) streamer_->stop();
 }
 
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_sendFrameToNative(
+        JNIEnv *env, jobject thiz,
+        jbyteArray yBytes,
+        jbyteArray uvBytes,
+        jint width,
+        jint height) {
+    if (uvcStreamer_) {
+        jbyte *yData = env->GetByteArrayElements(yBytes, nullptr);
+        jbyte *uvData = env->GetByteArrayElements(uvBytes, nullptr);
+
+        uvcStreamer_->sendMockFrame(
+                reinterpret_cast<const uint8_t *>(yData),
+                reinterpret_cast<const uint8_t *>(uvData), width, height);
+
+        env->ReleaseByteArrayElements(yBytes, yData, JNI_ABORT);
+        env->ReleaseByteArrayElements(uvBytes, uvData, JNI_ABORT);
+    }
+}
+
 } // extern "C"

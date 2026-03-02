@@ -22,15 +22,21 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
+import android.util.Log
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.ReturnCode
 import com.nano71.cameramonitor.core.connection.AudioStreamingConnection
 import com.nano71.cameramonitor.core.connection.AudioStreamingFormatTypeDescriptor
 import com.nano71.cameramonitor.core.connection.VideoFormat
 import com.nano71.cameramonitor.core.connection.VideoStreamingConnection
+import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.concurrent.thread
 
 enum class UsbSpeed {
     Unknown,
@@ -142,6 +148,9 @@ object UsbVideoNativeLibrary {
 
     @JvmStatic
     external fun updateTextures(texY: Int, texUV: Int): Boolean
+
+    @JvmStatic
+    external fun sendFrameToNative(y: ByteArray, uv: ByteArray, width: Int, height: Int)
 
     class VideoRenderer(private val context: Context) : GLSurfaceView.Renderer {
         private var programNV12 = 0
@@ -319,6 +328,72 @@ object UsbVideoNativeLibrary {
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_S, GLES30.GL_CLAMP_TO_EDGE)
             GLES30.glTexParameteri(GLES30.GL_TEXTURE_2D, GLES30.GL_TEXTURE_WRAP_T, GLES30.GL_CLAMP_TO_EDGE)
             return tex[0]
+        }
+    }
+}
+
+class FFmpegVideoDecoder(private val context: Context, private val assetPath: String) {
+    fun start() {
+        thread {
+            val pipe = FFmpegKitConfig.registerNewFFmpegPipe(context)  ;          if (pipe == null) {
+            Log.e("FFmpegVideoDecoder", "Failed to register FFmpeg pipe")
+            return@thread
+        }
+
+            // 设定目标分辨率
+            val targetWidth = 1920
+            val targetHeight = 1080
+
+            // 1. 添加 -vf scale 强制转换分辨率以匹配读取逻辑
+            // 2. 使用 -pix_fmt nv12 确保输出格式正确
+            val ffmpegCommand = "-y -re -stream_loop -1 -i \"$assetPath\" -vf scale=$targetWidth:$targetHeight -f rawvideo -pix_fmt nv12 \"$pipe\""
+            Log.d("FFmpegVideoDecoder", "Executing FFmpeg command: $ffmpegCommand")
+
+            FFmpegKit.executeAsync(ffmpegCommand) { session ->
+                val returnCode = session.returnCode
+                val output = session.output
+                if (ReturnCode.isSuccess(returnCode)) {
+                    Log.d("FFmpegVideoDecoder", "FFmpeg execution succeeded")
+                } else {
+                    Log.e("FFmpegVideoDecoder", "FFmpeg execution failed with return code $returnCode: $output")
+                }
+            }
+
+            try {
+                FileInputStream(pipe).use { inputStream ->
+                    val ySize = targetWidth * targetHeight
+                    val uvSize = ySize / 2
+                    val frameSize = ySize + uvSize
+                    val buffer = ByteArray(frameSize)
+
+                    while (!Thread.interrupted()) {
+                        var totalRead = 0
+                        while (totalRead < frameSize) {
+                            val read = inputStream.read(buffer, totalRead, frameSize - totalRead)
+                            if (read == -1) break
+                            totalRead += read
+                        }
+
+                        if (totalRead < frameSize) {
+                            Log.d("FFmpegVideoDecoder", "End of stream reached or pipe closed")
+                            break
+                        }
+
+                        // 直接拆分 Y 和 UV 分量发送给 Native
+                        val y = ByteArray(ySize)
+                        val uv = ByteArray(uvSize)
+                        System.arraycopy(buffer, 0, y, 0, ySize)
+                        System.arraycopy(buffer, ySize, uv, 0, uvSize)
+
+                        UsbVideoNativeLibrary.sendFrameToNative(y, uv, targetWidth, targetHeight)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FFmpegVideoDecoder", "Error reading from pipe", e)
+            } finally {
+                FFmpegKitConfig.closeFFmpegPipe(pipe)
+                Log.d("FFmpegVideoDecoder", "Decoder thread finished")
+            }
         }
     }
 }
