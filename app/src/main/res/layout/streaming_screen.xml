@@ -33,16 +33,6 @@ limitations under the License.
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
-    <com.nano71.cameramonitor.feature.streamer.ui.HistogramView
-            android:id="@+id/histogram_view"
-            android:background="#000000"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_width="160dp"
-            android:layout_height="120dp" />
-
     <LinearLayout
             android:divider="@drawable/divider_spacing"
             android:showDividers="middle"

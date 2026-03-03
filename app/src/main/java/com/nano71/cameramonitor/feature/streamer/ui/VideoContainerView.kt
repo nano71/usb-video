@@ -58,7 +58,18 @@ class VideoContainerView @JvmOverloads constructor(
 
         addView(glSurfaceView, 0, params)
         addView(gridOverlayView, 1, params)
-        addView(histogramView, 2)
+
+        val density = resources.displayMetrics.density
+        val margin = (12 * density).toInt()
+        val histogramParams = LayoutParams(
+            (160 * density).toInt(),
+            (90 * density).toInt(),
+            Gravity.END or Gravity.BOTTOM
+        ).apply {
+            setMargins(0, 0, margin, margin)
+        }
+
+        addView(histogramView, 2, histogramParams)
 
         videoAspectRatio = aspectRatioFloat
         requestLayout()
