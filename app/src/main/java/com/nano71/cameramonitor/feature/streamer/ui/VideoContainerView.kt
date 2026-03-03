@@ -34,12 +34,23 @@ class VideoContainerView @JvmOverloads constructor(
 
     private var videoAspectRatio: Float = 0f
 
+    init {
+        renderer.onHistogramData = { data ->
+            post {
+                histogramView.histogramData = data.copyOf()
+                histogramView.invalidate()
+            }
+        }
+    }
+
     fun toggleGridVisible() {
         gridOverlayView.visibility = if (gridOverlayView.isVisible) GONE else VISIBLE
     }
 
     fun toggleHistogramVisible() {
-        histogramView.visibility = if (histogramView.isVisible) GONE else VISIBLE
+        val willShow = !histogramView.isVisible
+        histogramView.visibility = if (willShow) VISIBLE else GONE
+        renderer.showHistogram = willShow
     }
 
     fun setZebraVisible(visible: Boolean) {

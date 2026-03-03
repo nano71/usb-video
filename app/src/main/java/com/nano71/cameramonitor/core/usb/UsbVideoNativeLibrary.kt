@@ -152,6 +152,9 @@ object UsbVideoNativeLibrary {
     @JvmStatic
     external fun sendFrameToNative(y: ByteArray, uv: ByteArray, width: Int, height: Int)
 
+    @JvmStatic
+    external fun getHistogramNative(histogram: IntArray)
+
     class VideoRenderer(private val context: Context) : GLSurfaceView.Renderer {
         private var programNV12 = 0
         private var programRGBA = 0
@@ -161,6 +164,10 @@ object UsbVideoNativeLibrary {
         private var texUV = 0
 
         var showZebra = false
+        var showHistogram = false
+        var onHistogramData: ((IntArray) -> Unit)? = null
+        private val histogramArray = IntArray(256)
+
         private val startTime = SystemClock.uptimeMillis()
 
         private lateinit var vertexBuffer: FloatBuffer
@@ -241,7 +248,12 @@ object UsbVideoNativeLibrary {
         override fun onDrawFrame(unused: GL10?) {
             // Attempt to update textures. If false, we still draw the last frame data
             // to avoid flickering (skipping draw or clearing to black).
-            updateTextures(texY, texUV)
+            if (updateTextures(texY, texUV)) {
+                if (showHistogram) {
+                    getHistogramNative(histogramArray)
+                    onHistogramData?.invoke(histogramArray)
+                }
+            }
 
             GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
 

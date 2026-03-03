@@ -119,6 +119,16 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getVideoFormat(JNIE
     return 0;
 }
 
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getHistogramNative(JNIEnv *env, jobject self, jintArray histogram) {
+    std::lock_guard<std::mutex> lock(streamer_mutex_);
+    if (uvcStreamer_) {
+        jint *histogramData = env->GetIntArrayElements(histogram, nullptr);
+        uvcStreamer_->getHistogram(reinterpret_cast<uint32_t *>(histogramData));
+        env->ReleaseIntArrayElements(histogram, histogramData, 0);
+    }
+}
+
 JNIEXPORT jboolean JNICALL
 Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_connectUsbAudioStreamingNative(
         JNIEnv *env,

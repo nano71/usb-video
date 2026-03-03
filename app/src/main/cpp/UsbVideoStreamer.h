@@ -77,6 +77,8 @@ public:
 
     int getFormat() const;
     bool bindFrameToTextures(int texY, int texUV);
+
+    void getHistogram(uint32_t *histogram);
     bool useMockFrame_{false};
 private:
     uvc_context_t *uvcContext_{};
