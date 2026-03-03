@@ -27,6 +27,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import android.util.Log
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.result.ActivityResultLauncher
@@ -98,6 +99,7 @@ class StreamerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.decorView.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         onBackPressedDispatcher.addCallback(this) {
             moveTaskToBack(true)
         }

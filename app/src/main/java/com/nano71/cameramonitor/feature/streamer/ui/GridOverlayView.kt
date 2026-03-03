@@ -22,16 +22,15 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 
-class CameraGridOverlay @JvmOverloads constructor(
+class GridOverlayView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    private val paint = Paint().apply {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         strokeWidth = 2f
         style = Paint.Style.STROKE
-        isAntiAlias = true
         alpha = 120
         visibility = GONE
     }

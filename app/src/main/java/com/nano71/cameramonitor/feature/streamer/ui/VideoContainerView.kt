@@ -29,11 +29,17 @@ class VideoContainerView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
     private val renderer = UsbVideoNativeLibrary.VideoRenderer(context)
     private var glSurfaceView: GLSurfaceView? = null
-    private val gridOverlay = CameraGridOverlay(context)
+    private val gridOverlayView = GridOverlayView(context)
+    private val histogramView = HistogramView(context)
+
     private var videoAspectRatio: Float = 0f
 
     fun toggleGridVisible() {
-        gridOverlay.visibility = if (gridOverlay.isVisible) GONE else VISIBLE
+        gridOverlayView.visibility = if (gridOverlayView.isVisible) GONE else VISIBLE
+    }
+
+    fun toggleHistogramVisible() {
+        histogramView.visibility = if (histogramView.isVisible) GONE else VISIBLE
     }
 
     fun setZebraVisible(visible: Boolean) {
@@ -50,11 +56,12 @@ class VideoContainerView @JvmOverloads constructor(
 
         val params = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER)
 
-        addView(glSurfaceView, params)
-        addView(gridOverlay, params)
+        addView(glSurfaceView, 0, params)
+        addView(gridOverlayView, 1, params)
+        addView(histogramView, 2)
 
         videoAspectRatio = aspectRatioFloat
-                requestLayout()
+        requestLayout()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

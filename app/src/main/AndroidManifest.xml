@@ -23,7 +23,6 @@ limitations under the License.
     <uses-sdk
             android:minSdkVersion="30"
             android:targetSdkVersion="34" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -36,7 +35,7 @@ limitations under the License.
 
     <application
             android:name="com.nano71.cameramonitor.app.UsbVideoApplication"
-            android:allowBackup="false"
+            android:hardwareAccelerated="true"
             android:icon="@drawable/ic_launcher"
             android:label="@string/app_name"
             android:supportsRtl="true"

@@ -15,7 +15,10 @@
  */
 package com.nano71.cameramonitor.feature.streamer.viewholder
 
+import android.annotation.SuppressLint
+import android.content.res.ColorStateList
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -25,6 +28,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
 import com.nano71.cameramonitor.R
 import com.nano71.cameramonitor.feature.streamer.StreamerScreen
 import com.nano71.cameramonitor.feature.streamer.StreamerViewModel
@@ -34,6 +38,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "StreamingViewHolder"
 
+@SuppressLint("ClickableViewAccessibility")
 class StreamingViewHolder(
     private val rootView: View,
     private val streamerViewModel: StreamerViewModel,
@@ -43,22 +48,47 @@ class StreamingViewHolder(
     val streamStatsTextView: TextView = rootView.findViewById(R.id.stream_stats_text)
     val videoContainerView: VideoContainerView = rootView.findViewById(R.id.video_container)
     val bottomToolbar: LinearLayout = rootView.findViewById(R.id.bottom_toolbar)
-    val backButton: View = bottomToolbar.findViewById(R.id.back_button)
-    val gridButton: View = bottomToolbar.findViewById(R.id.grid_button)
-    val zebraPrintButton: View = bottomToolbar.findViewById(R.id.texture_button)
+    val backButton: MaterialButton = bottomToolbar.findViewById(R.id.back_button)
+    val gridButton: MaterialButton = bottomToolbar.findViewById(R.id.grid_button)
+    val zebraPrintButton: MaterialButton = bottomToolbar.findViewById(R.id.texture_button)
+    val histogramButton: MaterialButton = bottomToolbar.findViewById(R.id.histogram_button)
+    val buttons = listOf(gridButton, zebraPrintButton, histogramButton)
 
+    // 状态 Map
+    val buttonStates = mutableMapOf<MaterialButton, Boolean>().apply {
+        buttons.forEach { put(it, false) } // 默认都未激活
+    }
     var operating = false
     var showZebra = false
 
+
     init {
+        // 禁用点击和焦点
+        itemView.isClickable = false
+        itemView.isFocusable = false
+
+        // 拦截所有触摸事件
+        itemView.setOnTouchListener { _, _ -> true }
         val videoFormat = streamerViewModel.videoFormat
         val width = videoFormat?.width ?: 1920
         val height = videoFormat?.height ?: 1080
         val aspectRatioFloat = videoFormat?.aspectRatioFloat ?: 1.77F
         videoContainerView.initialize(width, height, aspectRatioFloat)
-
+        disableRootViewTouch()
         setupToolbarToggle()
         setupToolbarButtons()
+    }
+
+    fun disableRootViewTouch() {
+        rootView.setOnTouchListener { v, event ->
+            if (event.actionMasked == MotionEvent.ACTION_MOVE) {
+                v.parent.requestDisallowInterceptTouchEvent(true)
+            }
+            if (event.actionMasked == MotionEvent.ACTION_UP) {
+                v.performClick()
+            }
+            true
+        }
     }
 
     fun observeViewModel(lifecycleOwner: LifecycleOwner) {
@@ -73,16 +103,33 @@ class StreamingViewHolder(
     }
 
     private fun setupToolbarButtons() {
+        fun updateButtonColor(button: MaterialButton) {
+            val oldState = buttonStates[button] ?: false
+            val color = if (oldState) {
+                button.context.getColor(R.color.on_overlay_surface)
+            } else {
+                button.context.getColor(R.color.on_overlay_surface_active)
+            }
+            button.iconTint = ColorStateList.valueOf(color)
+            buttonStates[button] = !oldState
+        }
         backButton.setOnClickListener {
             Log.i(TAG, "offButton clicked")
             onNavigate(StreamerScreen.Status)
         }
         gridButton.setOnClickListener {
             videoContainerView.toggleGridVisible()
+            updateButtonColor(gridButton)
         }
         zebraPrintButton.setOnClickListener {
             showZebra = !showZebra
             videoContainerView.setZebraVisible(showZebra)
+            updateButtonColor(zebraPrintButton)
+
+        }
+        histogramButton.setOnClickListener {
+            videoContainerView.toggleHistogramVisible()
+            updateButtonColor(histogramButton)
         }
     }
 
