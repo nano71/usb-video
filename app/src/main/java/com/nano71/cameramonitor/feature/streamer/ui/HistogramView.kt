@@ -23,8 +23,6 @@ class HistogramView @JvmOverloads constructor(
         alpha = 180
     }
 
-    var histogramData: IntArray = IntArray(256)
-
     private var lastTouchX = 0f
     private var lastTouchY = 0f
     private var isDragging = false
@@ -36,16 +34,29 @@ class HistogramView @JvmOverloads constructor(
         setBackgroundColor("#66000000".toColorInt())
     }
 
+    private val smoothHistogram = FloatArray(256)
+    private val smoothingFactor = 0.2f   // 0~1，越小越稳
+
+    fun updateHistogram(newData: IntArray) {
+        for (i in 0 until 256) {
+            smoothHistogram[i] =
+                smoothHistogram[i] * (1f - smoothingFactor) +
+                        newData[i] * smoothingFactor
+        }
+        invalidate()
+    }
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         val w = width.toFloat()
         val h = height.toFloat()
         val barWidth = w / 256f
-        val max = histogramData.maxOrNull()?.let { if (it == 0) 1f else it.toFloat() } ?: 1f
+        val max = smoothHistogram.maxOrNull()?.let {
+            if (it == 0f) 1f else it
+        } ?: 1f
 
         for (i in 0 until 256) {
-            val value = histogramData[i] / max
+            val value = smoothHistogram[i] / max
             val barHeight = value * h
             canvas.drawLine(
                 i * barWidth,

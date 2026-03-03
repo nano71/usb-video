@@ -202,32 +202,63 @@ bool UsbVideoStreamer::bindFrameToTextures(int texY, int texUV) {
 
 void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
     std::lock_guard<std::mutex> lock(frameMutex_);
+
     std::memset(histogram, 0, 256 * sizeof(uint32_t));
+    int sampleCount = 0;
+
+    const int step = 2;
+    const int width = captureFrameWidth_;
+    const int height = captureFrameHeight_;
 
     int format = getFormat();
-    if (format == 1) { // NV12
-        for (uint8_t y: plane0_) {
-            histogram[y]++;
+
+    if (format == 1) {
+
+        const uint8_t *yPlane = plane0_.data();
+
+        for (int y = 0; y < height; y += step) {
+            const uint8_t *row = yPlane + y * width;
+            for (int x = 0; x < width; x += step) {
+                uint8_t value = row[x];
+                histogram[value]++;
+                sampleCount++;
+            }
         }
-    } else if (format == 2) { // YUYV
-        // YUYV format: Y0 U0 Y1 V0 ...
-        // Y is at index 0, 2, 4, ...
-        for (size_t i = 0; i < plane0_.size(); i += 2) {
-            histogram[plane0_[i]]++;
+    } else if (format == 2) {
+
+        const uint8_t *buffer = plane0_.data();
+
+        for (int y = 0; y < height; y += step) {
+            const uint8_t *row = buffer + y * width * 2;
+
+            for (int x = 0; x < width; x += step) {
+                uint8_t value = row[x * 2];  // Y 分量
+                histogram[value]++;
+                sampleCount++;
+            }
         }
-    } else { // RGBA
-        // RGBA format: R G B A ...
-        // We calculate luminance Y = 0.299R + 0.587G + 0.114B
-        for (size_t i = 0; i < rgbaBuffer_.size(); i += 4) {
-            uint8_t r = rgbaBuffer_[i];
-            uint8_t g = rgbaBuffer_[i + 1];
-            uint8_t b = rgbaBuffer_[i + 2];
-            uint8_t y = static_cast<uint8_t>(0.299f * r + 0.587f * g + 0.114f * b);
-            histogram[y]++;
+    } else {
+
+        const uint8_t *buffer = rgbaBuffer_.data();
+
+        for (int y = 0; y < height; y += step) {
+            const uint8_t *row = buffer + y * width * 4;
+
+            for (int x = 0; x < width; x += step) {
+                const uint8_t *px = row + x * 4;
+
+                uint8_t r = px[0];
+                uint8_t g = px[1];
+                uint8_t b = px[2];
+
+                uint8_t luma = (77 * r + 150 * g + 29 * b) >> 8;
+
+                histogram[luma]++;
+                sampleCount++;
+            }
         }
     }
 }
-
 
 void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data) {
     UsbVideoStreamer *self = (UsbVideoStreamer *) user_data;

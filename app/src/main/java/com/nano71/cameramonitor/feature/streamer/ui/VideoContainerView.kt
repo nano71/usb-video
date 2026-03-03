@@ -37,8 +37,7 @@ class VideoContainerView @JvmOverloads constructor(
     init {
         renderer.onHistogramData = { data ->
             post {
-                histogramView.histogramData = data.copyOf()
-                histogramView.invalidate()
+                histogramView.updateHistogram(data)
             }
         }
     }
@@ -71,7 +70,7 @@ class VideoContainerView @JvmOverloads constructor(
         addView(gridOverlayView, 1, params)
 
         val density = resources.displayMetrics.density
-        val margin = (12 * density).toInt()
+        val margin = (24 * density).toInt()
         val histogramParams = LayoutParams(
             (160 * density).toInt(),
             (90 * density).toInt(),

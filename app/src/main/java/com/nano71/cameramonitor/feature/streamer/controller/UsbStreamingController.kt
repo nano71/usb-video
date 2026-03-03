@@ -65,7 +65,7 @@ internal class UsbStreamingController {
 
                     // 使用 FFmpeg 替换 MediaCodec 进行模拟视频解码
                     Thread {
-                        FFmpegVideoDecoder(context, "file:///storage/emulated/0/Movies/QQ/1080p30fps.mp4").start()
+                        FFmpegVideoDecoder(context, "file:///storage/emulated/0/Movies/QQ/12886332_1920_1080_60fps.mp4").start()
                     }.start()
                 }
             }
