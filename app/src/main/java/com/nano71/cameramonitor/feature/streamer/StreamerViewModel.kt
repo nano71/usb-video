@@ -54,6 +54,7 @@ class StreamerViewModel() : ViewModel() {
     private val controller = UsbStreamingController()
 
     fun stopStreaming() {
+        Log.i(TAG, "stopStreaming() called")
         (UsbMonitor.usbDeviceState as? UsbDeviceState.Streaming)?.let {
             setState(
                 UsbDeviceState.StreamingStop(
@@ -66,6 +67,7 @@ class StreamerViewModel() : ViewModel() {
     }
 
     fun restartStreaming() {
+        Log.i(TAG, "restartStreaming() called")
         (UsbMonitor.usbDeviceState as? UsbDeviceState.StreamingStopped)?.let {
             setState(
                 UsbDeviceState.StreamingRestart(
@@ -210,5 +212,6 @@ class StreamerViewModel() : ViewModel() {
     private val mutableStartStopFlow = MutableStateFlow(Unit)
     val startStopSignal: Flow<Unit> = mutableStartStopFlow.asStateFlow().onCompletion {
         stopStreaming()
+        onStreamingStopRequested(UsbMonitor.usbDeviceState as UsbDeviceState.StreamingStop)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 10_000), Unit)
 }

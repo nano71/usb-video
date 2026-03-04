@@ -107,26 +107,33 @@ class StreamerActivity : ComponentActivity() {
     }
 
     private fun doOnCreate() {
+
         prepareCameraPermissionLaunchers()
         prepareUsbBroadcastReceivers()
         setContentView(R.layout.activity_streamer)
+
         viewPager = findViewById(R.id.view_pager)
         viewPager.offscreenPageLimit = 1
         viewPager.setPageTransformer(ZoomOutPageTransformer())
+
         screensAdapter = StreamerScreensAdapter(this, streamerViewModel)
         { targetScreen ->
             val index = StreamerScreen.entries.indexOf(targetScreen)
             viewPager.setCurrentItem(index, true)
         }
+
+        viewPager.adapter = screensAdapter
+
         streamerViewModel.updateRecordAudioPermissionState(getRecordAudioPermissionState())
         streamerViewModel.updateCameraPermissionState(getCameraPermissionState())
-        viewPager.adapter = screensAdapter
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 streamerViewModel.restartStreaming()
                 streamerViewModel.startStopSignal.collect {}
             }
         }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 uiActionFlow().collect {
@@ -377,9 +384,7 @@ class StreamerActivity : ComponentActivity() {
     }
 
     private suspend fun refreshUsbPermissionStateFromSystem() {
-        val usbManager = getUsbManager() ?: return
         val state = UsbMonitor.usbDeviceState
-        Log.i(TAG, "refreshUsbPermissionStateFromSystem() called with: state = $state")
         val device =
             when (state) {
                 is UsbDeviceState.PermissionRequired -> state.usbDevice
@@ -389,6 +394,8 @@ class StreamerActivity : ComponentActivity() {
                 else -> null
             } ?: return
 
+        Log.i(TAG, "refreshUsbPermissionStateFromSystem() called with: state = $state")
+        val usbManager = getUsbManager() ?: return
         if (usbManager.hasPermission(device)) {
             Log.i(TAG, "refreshUsbPermissionStateFromSystem: permission is granted, recovering state")
             setState(UsbDeviceState.PermissionGranted(device))
