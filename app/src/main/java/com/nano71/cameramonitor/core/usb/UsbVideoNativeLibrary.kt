@@ -166,6 +166,8 @@ object UsbVideoNativeLibrary {
         var showZebra = false
         var showHistogram = false
         var onHistogramData: ((IntArray) -> Unit)? = null
+        var frameCount = 0
+
         private val histogramArray = IntArray(256)
 
         private val startTime = SystemClock.uptimeMillis()
@@ -250,8 +252,10 @@ object UsbVideoNativeLibrary {
             // to avoid flickering (skipping draw or clearing to black).
             if (updateTextures(texY, texUV)) {
                 if (showHistogram) {
-                    getHistogramNative(histogramArray)
-                    onHistogramData?.invoke(histogramArray)
+                    if (++frameCount % 4 == 0) {
+                        getHistogramNative(histogramArray)
+                        onHistogramData?.invoke(histogramArray)
+                    }
                 }
             }
 
@@ -380,10 +384,11 @@ object UsbVideoNativeLibrary {
 class FFmpegVideoDecoder(private val context: Context, private val assetPath: String) {
     fun start() {
         thread {
-            val pipe = FFmpegKitConfig.registerNewFFmpegPipe(context)  ;          if (pipe == null) {
-            Log.e("FFmpegVideoDecoder", "Failed to register FFmpeg pipe")
-            return@thread
-        }
+            val pipe = FFmpegKitConfig.registerNewFFmpegPipe(context);
+            if (pipe == null) {
+                Log.e("FFmpegVideoDecoder", "Failed to register FFmpeg pipe")
+                return@thread
+            }
 
             // 设定目标分辨率
             val targetWidth = 1920

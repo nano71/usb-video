@@ -78,10 +78,12 @@ class VideoContainerView @JvmOverloads constructor(
         ).apply {
             setMargins(0, 0, margin, margin)
         }
+        histogramView.setFrameSize(videoWidth,videoHeight)
 
         addView(histogramView, 2, histogramParams)
 
         videoAspectRatio = aspectRatioFloat
+
         requestLayout()
     }
 

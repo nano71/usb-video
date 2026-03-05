@@ -204,40 +204,40 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
     std::lock_guard<std::mutex> lock(frameMutex_);
 
     std::memset(histogram, 0, 256 * sizeof(uint32_t));
-    int sampleCount = 0;
 
-    const int step = 2;
-    const int width = captureFrameWidth_;
-    const int height = captureFrameHeight_;
+    const int width = width_;
+    const int height = height_;
+    if (width == 0 || height == 0) return;
+
+    const int step = 4;
 
     int format = getFormat();
 
-    if (format == 1) {
+    if (format == 1) { // NV12
 
         const uint8_t *yPlane = plane0_.data();
 
         for (int y = 0; y < height; y += step) {
             const uint8_t *row = yPlane + y * width;
+
             for (int x = 0; x < width; x += step) {
-                uint8_t value = row[x];
-                histogram[value]++;
-                sampleCount++;
+                histogram[row[x]]++;
             }
         }
-    } else if (format == 2) {
+
+    } else if (format == 2) { // YUYV
 
         const uint8_t *buffer = plane0_.data();
 
         for (int y = 0; y < height; y += step) {
             const uint8_t *row = buffer + y * width * 2;
 
-            for (int x = 0; x < width; x += step) {
-                uint8_t value = row[x * 2];  // Y 分量
-                histogram[value]++;
-                sampleCount++;
+            for (int x = 0; x < width * 2; x += step * 2) {
+                histogram[row[x]]++;
             }
         }
-    } else {
+
+    } else { // RGBA
 
         const uint8_t *buffer = rgbaBuffer_.data();
 
@@ -245,6 +245,7 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
             const uint8_t *row = buffer + y * width * 4;
 
             for (int x = 0; x < width; x += step) {
+
                 const uint8_t *px = row + x * 4;
 
                 uint8_t r = px[0];
@@ -254,7 +255,6 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
                 uint8_t luma = (77 * r + 150 * g + 29 * b) >> 8;
 
                 histogram[luma]++;
-                sampleCount++;
             }
         }
     }
