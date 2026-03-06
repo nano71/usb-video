@@ -111,6 +111,6 @@ private:
     std::vector<uint8_t> plane0_;
     std::vector<uint8_t> plane1_;
     std::vector<uint8_t> rgbaBuffer_;
-
+    int frameCount_{0};
     uint32_t histogramCache_[256];
 };

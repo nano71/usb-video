@@ -59,8 +59,8 @@ class HistogramView @JvmOverloads constructor(
     private var histogramData = IntArray(256)
     private val paint = Paint().apply {
         color = Color.WHITE
-        style = Paint.Style.FILL
-        isAntiAlias = true
+        style = Paint.Style.FILL_AND_STROKE
+        isAntiAlias = false
     }
 
     fun updateHistogram(newData: IntArray) {
@@ -68,13 +68,13 @@ class HistogramView @JvmOverloads constructor(
         val filteredData = filterOutliers(newData)
 
         histogramData = filteredData
-        histogramData
-            .mapIndexed { index, freq -> index to freq }
-            .sortedByDescending { it.second }
-            .take(10)
-            .forEach { (gray, freq) ->
-                Log.i("Histogram", "Gray $gray: $freq")
-            }
+//        histogramData
+//            .mapIndexed { index, freq -> index to freq }
+//            .sortedByDescending { it.second }
+//            .take(10)
+//            .forEach { (gray, freq) ->
+//                Log.i("Histogram", "Gray $gray: $freq")
+//            }
         invalidate()
     }
     override fun onDraw(canvas: Canvas) {

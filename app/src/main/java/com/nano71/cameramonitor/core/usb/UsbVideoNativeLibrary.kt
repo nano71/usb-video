@@ -249,10 +249,8 @@ object UsbVideoNativeLibrary {
         override fun onDrawFrame(unused: GL10?) {
             if (updateTextures(texY, texUV)) {
                 if (showHistogram) {
-                    if (++frameCount % 4 == 0) {
                         getHistogramNative(histogramArray)
                         onHistogramData?.invoke(histogramArray)
-                    }
                 }
             }
 

@@ -203,8 +203,7 @@ bool UsbVideoStreamer::bindFrameToTextures(int texY, int texUV) {
 }
 
 void UsbVideoStreamer::computeHistogram() {
-
-    if (!histogramEnabled_) return;
+    if (!histogramEnabled_ || ++frameCount_ % 4 != 0) return;
 
     uint32_t local[256] = {0};
 
