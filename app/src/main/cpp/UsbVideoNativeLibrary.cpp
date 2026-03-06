@@ -31,7 +31,8 @@ static std::mutex streamer_mutex_;
 
 extern "C" {
 
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved) {
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM *jvm, void *reserved) {
     return JNI_VERSION_1_6;
 }
 
@@ -56,7 +57,7 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_connectUsbVideoStre
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     if (uvcStreamer_ == nullptr) {
         uvcStreamer_ = std::make_unique<UsbVideoStreamer>(
-                (intptr_t) deviceFd, width, height, fps, static_cast<uvc_frame_format>(libuvcFrameFormat));
+                (intptr_t) deviceFd, width, height, fps, (uvc_frame_format) (libuvcFrameFormat));
         return uvcStreamer_->configureOutput();
     }
     return false;
@@ -73,7 +74,8 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_startUsbVideoStream
     return false;
 }
 
-JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_stopUsbVideoStreamingNative(
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_stopUsbVideoStreamingNative(
         JNIEnv *env,
         jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
@@ -82,14 +84,16 @@ JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibr
     }
 }
 
-JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_disconnectUsbVideoStreamingNative(
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_disconnectUsbVideoStreamingNative(
         JNIEnv *env,
         jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     uvcStreamer_ = nullptr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_streamingStatsSummaryString(
+JNIEXPORT jstring JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_streamingStatsSummaryString(
         JNIEnv *env,
         jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
@@ -102,7 +106,10 @@ JNIEXPORT jstring JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeL
 
 
 JNIEXPORT jboolean JNICALL
-Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_updateTextures(JNIEnv *env, jobject self, jint texY, jint texUV) {
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_updateTextures(
+        JNIEnv *env,
+        jobject self,
+        jint texY, jint texUV) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     if (uvcStreamer_) {
         return uvcStreamer_->bindFrameToTextures(texY, texUV);
@@ -111,7 +118,9 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_updateTextures(JNIE
 }
 
 JNIEXPORT jint JNICALL
-Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getVideoFormat(JNIEnv *env, jobject self) {
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getVideoFormat(
+        JNIEnv *env,
+        jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     if (uvcStreamer_) {
         return uvcStreamer_->getFormat();
@@ -120,7 +129,10 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getVideoFormat(JNIE
 }
 
 JNIEXPORT void JNICALL
-Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getHistogramNative(JNIEnv *env, jobject self, jintArray histogram) {
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_getHistogramNative(
+        JNIEnv *env,
+        jobject self,
+        jintArray histogram) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     if (uvcStreamer_) {
         jint *histogramData = env->GetIntArrayElements(histogram, nullptr);
@@ -153,14 +165,16 @@ Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_connectUsbAudioStre
     return streamer_ != nullptr;
 }
 
-JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_disconnectUsbAudioStreamingNative(
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_disconnectUsbAudioStreamingNative(
         JNIEnv *env,
         jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
     streamer_ = nullptr;
 }
 
-JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_startUsbAudioStreamingNative(
+JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_startUsbAudioStreamingNative(
         JNIEnv *env,
         jobject self) {
     std::lock_guard<std::mutex> lock(streamer_mutex_);
@@ -175,8 +189,19 @@ JNIEXPORT void JNICALL Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibr
 }
 
 JNIEXPORT void JNICALL
+Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_setHistogramEnabled(
+        JNIEnv *env,
+        jobject self,
+        jboolean enabled) {
+    std::lock_guard<std::mutex> lock(streamer_mutex_);
+    uvcStreamer_->setHistogramEnabled(enabled);
+}
+
+
+JNIEXPORT void JNICALL
 Java_com_nano71_cameramonitor_core_usb_UsbVideoNativeLibrary_sendFrameToNative(
-        JNIEnv *env, jobject thiz,
+        JNIEnv *env,
+        jobject self,
         jbyteArray yBytes,
         jbyteArray uvBytes,
         jint width,

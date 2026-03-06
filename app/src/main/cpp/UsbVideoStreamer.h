@@ -78,6 +78,10 @@ public:
     int getFormat() const;
     bool bindFrameToTextures(int texY, int texUV);
 
+    void computeHistogram();
+
+    void setHistogramEnabled(bool enabled);
+
     void getHistogram(uint32_t *histogram);
     bool useMockFrame_{false};
 private:
@@ -101,8 +105,12 @@ private:
     UsbVideoStreamerStats stats_{};
 
     std::mutex frameMutex_;
+    std::mutex histogramMutex_;
     bool frameUpdated_{false};
+    std::atomic<bool> histogramEnabled_{false};
     std::vector<uint8_t> plane0_;
     std::vector<uint8_t> plane1_;
     std::vector<uint8_t> rgbaBuffer_;
+
+    uint32_t histogramCache_[256];
 };

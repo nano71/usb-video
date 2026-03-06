@@ -146,14 +146,13 @@ object UsbVideoNativeLibrary {
     external fun streamingStatsSummaryString(): String
     external fun getVideoFormat(): Int
 
-    @JvmStatic
-    external fun updateTextures(texY: Int, texUV: Int): Boolean
+    private external fun updateTextures(texY: Int, texUV: Int): Boolean
 
-    @JvmStatic
     external fun sendFrameToNative(y: ByteArray, uv: ByteArray, width: Int, height: Int)
 
-    @JvmStatic
-    external fun getHistogramNative(histogram: IntArray)
+    private external fun getHistogramNative(histogram: IntArray)
+
+    external fun setHistogramEnabled(enabled: Boolean)
 
     class VideoRenderer(private val context: Context) : GLSurfaceView.Renderer {
         private var programNV12 = 0
@@ -248,8 +247,6 @@ object UsbVideoNativeLibrary {
         }
 
         override fun onDrawFrame(unused: GL10?) {
-            // Attempt to update textures. If false, we still draw the last frame data
-            // to avoid flickering (skipping draw or clearing to black).
             if (updateTextures(texY, texUV)) {
                 if (showHistogram) {
                     if (++frameCount % 4 == 0) {

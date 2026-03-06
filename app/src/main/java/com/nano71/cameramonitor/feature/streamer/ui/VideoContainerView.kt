@@ -49,6 +49,7 @@ class VideoContainerView @JvmOverloads constructor(
     fun toggleHistogramVisible() {
         val willShow = !histogramView.isVisible
         histogramView.visibility = if (willShow) VISIBLE else GONE
+        UsbVideoNativeLibrary.setHistogramEnabled(willShow)
         renderer.showHistogram = willShow
     }
 

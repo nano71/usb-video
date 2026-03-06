@@ -130,6 +130,8 @@ void UsbVideoStreamer::sendMockFrame(const uint8_t* yData, const uint8_t* uvData
 
     frameUpdated_ = true;
     stats_.recordFrame();
+
+    computeHistogram();
 }
 
 std::string UsbVideoStreamer::statsSummaryString() const {
@@ -200,10 +202,11 @@ bool UsbVideoStreamer::bindFrameToTextures(int texY, int texUV) {
     return true;
 }
 
-void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
-    std::lock_guard<std::mutex> lock(frameMutex_);
+void UsbVideoStreamer::computeHistogram() {
 
-    std::memset(histogram, 0, 256 * sizeof(uint32_t));
+    if (!histogramEnabled_) return;
+
+    uint32_t local[256] = {0};
 
     const int width = width_;
     const int height = height_;
@@ -221,7 +224,7 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
             const uint8_t *row = yPlane + y * width;
 
             for (int x = 0; x < width; x += step) {
-                histogram[row[x]]++;
+                local[row[x]]++;
             }
         }
 
@@ -233,7 +236,7 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
             const uint8_t *row = buffer + y * width * 2;
 
             for (int x = 0; x < width * 2; x += step * 2) {
-                histogram[row[x]]++;
+                local[row[x]]++;
             }
         }
 
@@ -254,10 +257,23 @@ void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
 
                 uint8_t luma = (77 * r + 150 * g + 29 * b) >> 8;
 
-                histogram[luma]++;
+                local[luma]++;
             }
         }
     }
+    {
+        std::lock_guard<std::mutex> lock(histogramMutex_);
+        memcpy(histogramCache_, local, sizeof(local));
+    }
+}
+
+void UsbVideoStreamer::setHistogramEnabled(bool enabled) {
+    histogramEnabled_.store(enabled, std::memory_order_relaxed);
+}
+
+void UsbVideoStreamer::getHistogram(uint32_t *histogram) {
+    std::lock_guard<std::mutex> lock(histogramMutex_);
+    memcpy(histogram, histogramCache_, 256 * sizeof(uint32_t));
 }
 
 void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data) {
@@ -324,4 +340,5 @@ void UsbVideoStreamer::captureFrameCallback(uvc_frame_t *frame, void *user_data)
 
     self->frameUpdated_ = true;
     stats.recordFrame();
+    self->computeHistogram();
 }
